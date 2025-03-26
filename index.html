@@ -61,6 +61,28 @@
       border-bottom: 1px solid #ddd;
       padding: 5px 0;
     }
+    .goal-tracker {
+      margin-top: 40px;
+      padding: 20px;
+      border: 2px solid #000;
+    }
+    .goal {
+      margin-bottom: 20px;
+    }
+    .goal-title {
+      font-weight: bold;
+    }
+    .progress-bar {
+      background: #ddd;
+      height: 10px;
+      position: relative;
+      margin-top: 5px;
+    }
+    .progress-fill {
+      background: #d3ff00;
+      height: 100%;
+      width: 0%;
+    }
   </style>
 </head>
 <body>
@@ -97,6 +119,26 @@
   <div class="log">
     <h2>Monthly Log</h2>
     <div id="logContainer"></div>
+  </div>
+
+  <div class="goal-tracker">
+    <h2>Financial Goals</h2>
+
+    <div class="goal">
+      <div class="goal-title">Pay Off Personal Loan (Target: $13,000 by Dec 2025)</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 39.29%"></div>
+      </div>
+      <p>Progress: $5,108.60 paid</p>
+    </div>
+
+    <div class="goal">
+      <div class="goal-title">Pay Off AmEx (Target: $3,000 by Sep 2025)</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p>Progress: $0 paid</p>
+    </div>
   </div>
 
   <script>
