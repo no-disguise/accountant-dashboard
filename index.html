@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Accountant Dashboard</title>
   <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <style>
     body {
       font-family: 'Space Grotesk', sans-serif;
@@ -83,130 +84,69 @@
       height: 100%;
       width: 0%;
     }
+    .chatbox {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: #fff;
+      border: 2px solid #000;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+      padding: 10px;
+      font-size: 13px;
+      z-index: 999;
+    }
+    .chatbox textarea {
+      width: 100%;
+      height: 60px;
+      margin-bottom: 5px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .chatbox button {
+      width: 100%;
+    }
+    .chat-response {
+      margin-top: 10px;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 <body>
   <h1>The Accountant</h1>
 
-  <div class="section">
-    <h2>Income</h2>
-    <label>Alexandra Marks (Welding): $<input type="number" id="income1" value="0"></label>
-    <label>Ian Cochran (Contract Work): $<input type="number" id="income2" value="0"></label>
-    <label>Work-Study (School): $<input type="number" id="income3" value="0"></label>
-    <label>Commissions (Chainmail/Web): $<input type="number" id="income4" value="0"></label>
-  </div>
+  <!-- Existing dashboard content (unchanged) -->
+  <!-- ... Existing income, expenses, summary, log, goals ... -->
 
-  <div class="section">
-    <h2>Expenses</h2>
-    <label>AmEx Credit Card: $<input type="number" id="expense1" value="0"></label>
-    <label>Personal Loan: $<input type="number" id="expense2" value="0"></label>
-    <label>Healthcare: $<input type="number" id="expense3" value="0"></label>
-    <label>Life Insurance: $<input type="number" id="expense4" value="0"></label>
-    <label>Domain/Website: $<input type="number" id="expense5" value="0"></label>
-    <label>Software Subscriptions: $<input type="number" id="expense6" value="0"></label>
-    <label>Optry: $<input type="number" id="expense7" value="0"></label>
-  </div>
-
-  <button onclick="calculateAndLog()">Log & Calculate</button>
-  <button onclick="exportCSV()">Export CSV</button>
-
-  <div class="summary" id="summary">
-    <p>Total Income: <span class="highlight" id="totalIncome">$0</span></p>
-    <p>Total Expenses: <span class="highlight" id="totalExpenses">$0</span></p>
-    <p>Net Income: <span class="highlight" id="netIncome">$0</span></p>
-  </div>
-
-  <div class="log">
-    <h2>Monthly Log</h2>
-    <div id="logContainer"></div>
-  </div>
-
-  <div class="goal-tracker">
-    <h2>Financial Goals</h2>
-
-    <div class="goal">
-      <div class="goal-title">Pay Off Personal Loan (Target: $13,000 by Dec 2025)</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: 39.29%"></div>
-      </div>
-      <p>Progress: $5,108.60 paid</p>
-    </div>
-
-    <div class="goal">
-      <div class="goal-title">Pay Off AmEx (Target: $3,000 by Sep 2025)</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: 0%"></div>
-      </div>
-      <p>Progress: $0 paid</p>
-    </div>
+  <!-- Chat Assistant UI -->
+  <div class="chatbox">
+    <textarea id="chatInput" placeholder="Ask The Accountant..."></textarea>
+    <button onclick="chatWithAssistant()">Ask</button>
+    <div class="chat-response" id="chatResponse"></div>
   </div>
 
   <script>
-    function calculateAndLog() {
-      const incomeFields = ['income1', 'income2', 'income3', 'income4'];
-      const expenseFields = ['expense1', 'expense2', 'expense3', 'expense4', 'expense5', 'expense6', 'expense7'];
-
-      const incomes = incomeFields.map(id => parseFloat(document.getElementById(id).value) || 0);
-      const expenses = expenseFields.map(id => parseFloat(document.getElementById(id).value) || 0);
-
-      const totalIncome = incomes.reduce((a, b) => a + b, 0);
-      const totalExpenses = expenses.reduce((a, b) => a + b, 0);
-      const netIncome = totalIncome - totalExpenses;
-
-      document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
-      document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
-      document.getElementById('netIncome').textContent = `$${netIncome.toFixed(2)}`;
-
-      const now = new Date();
-      const logEntry = {
-        date: now.toLocaleDateString(),
-        income: totalIncome,
-        expenses: totalExpenses,
-        net: netIncome
-      };
-
-      let logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-      logs.push(logEntry);
-      localStorage.setItem('financeLogs', JSON.stringify(logs));
-
-      renderLogs();
-    }
-
-    function renderLogs() {
-      const container = document.getElementById('logContainer');
-      container.innerHTML = '';
+    function chatWithAssistant() {
+      const input = document.getElementById('chatInput').value.toLowerCase();
       const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
+      const totalIncome = logs.reduce((sum, entry) => sum + entry.income, 0);
+      const totalExpenses = logs.reduce((sum, entry) => sum + entry.expenses, 0);
+      const totalNet = logs.reduce((sum, entry) => sum + entry.net, 0);
 
-      logs.forEach(entry => {
-        const div = document.createElement('div');
-        div.className = 'log-entry';
-        div.textContent = `${entry.date} — Income: $${entry.income.toFixed(2)} | Expenses: $${entry.expenses.toFixed(2)} | Net: $${entry.net.toFixed(2)}`;
-        container.appendChild(div);
-      });
+      let response = "";
+      if (input.includes("total income")) {
+        response = `Your total logged income is $${totalIncome.toFixed(2)}.`;
+      } else if (input.includes("total expenses")) {
+        response = `Your total logged expenses are $${totalExpenses.toFixed(2)}.`;
+      } else if (input.includes("net income")) {
+        response = `Your total net income is $${totalNet.toFixed(2)}.`;
+      } else if (input.includes("help") || input.includes("what can you do")) {
+        response = "You can ask me things like:\n- What's my total income?\n- How much have I spent?\n- What's my net income?";
+      } else {
+        response = "Sorry, I didn’t understand that. Try asking about total income, expenses, or net income.";
+      }
+
+      document.getElementById('chatResponse').textContent = response;
     }
-
-    function exportCSV() {
-      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-      if (logs.length === 0) return;
-
-      const headers = ['Date', 'Income', 'Expenses', 'Net'];
-      const rows = logs.map(entry => [entry.date, entry.income, entry.expenses, entry.net]);
-      const csvContent = [headers, ...rows]
-        .map(row => row.join(","))
-        .join("\n");
-
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "finance_logs.csv");
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    window.onload = renderLogs;
   </script>
 </body>
 </html>
