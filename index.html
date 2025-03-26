@@ -114,8 +114,58 @@
 <body>
   <h1>The Accountant</h1>
 
-  <!-- Existing dashboard content (unchanged) -->
-  <!-- ... Existing income, expenses, summary, log, goals ... -->
+  <div class="section">
+    <h2>Income</h2>
+    <label>Alexandra Marks (Welding): $<input type="number" id="income1" value="0"></label>
+    <label>Ian Cochran (Contract Work): $<input type="number" id="income2" value="0"></label>
+    <label>Work-Study (School): $<input type="number" id="income3" value="0"></label>
+    <label>Commissions (Chainmail/Web): $<input type="number" id="income4" value="0"></label>
+  </div>
+
+  <div class="section">
+    <h2>Expenses</h2>
+    <label>AmEx Credit Card: $<input type="number" id="expense1" value="0"></label>
+    <label>Personal Loan: $<input type="number" id="expense2" value="0"></label>
+    <label>Healthcare: $<input type="number" id="expense3" value="0"></label>
+    <label>Life Insurance: $<input type="number" id="expense4" value="0"></label>
+    <label>Domain/Website: $<input type="number" id="expense5" value="0"></label>
+    <label>Software Subscriptions: $<input type="number" id="expense6" value="0"></label>
+    <label>Optry: $<input type="number" id="expense7" value="0"></label>
+  </div>
+
+  <button onclick="calculateAndLog()">Log & Calculate</button>
+  <button onclick="exportCSV()">Export CSV</button>
+
+  <div class="summary" id="summary">
+    <p>Total Income: <span class="highlight" id="totalIncome">$0</span></p>
+    <p>Total Expenses: <span class="highlight" id="totalExpenses">$0</span></p>
+    <p>Net Income: <span class="highlight" id="netIncome">$0</span></p>
+  </div>
+
+  <div class="log">
+    <h2>Monthly Log</h2>
+    <div id="logContainer"></div>
+  </div>
+
+  <div class="goal-tracker">
+    <h2>Financial Goals</h2>
+
+    <div class="goal">
+      <div class="goal-title">Pay Off Personal Loan (Target: $13,000 by Dec 2025)</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 39.29%"></div>
+      </div>
+      <p>Progress: $5,108.60 paid</p>
+    </div>
+
+    <div class="goal">
+      <div class="goal-title">Pay Off AmEx (Target: $3,000 by Sep 2025)</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 0%"></div>
+      </div>
+      <p>Progress: $0 paid</p>
+    </div>
+  </div>
 
   <!-- Chat Assistant UI -->
   <div class="chatbox">
@@ -150,3 +200,4 @@
   </script>
 </body>
 </html>
+
