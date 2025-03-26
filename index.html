@@ -25,8 +25,7 @@
       display: block;
       margin-top: 10px;
     }
-    input[type="number"] {
-      width: 200px;
+    input, select {
       padding: 5px;
       margin-bottom: 10px;
       font-size: 14px;
@@ -48,40 +47,36 @@
       padding: 8px 16px;
       font-size: 14px;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 10px;
+      margin-right: 5px;
     }
     button:hover {
       opacity: 0.8;
     }
-    .log {
-      margin-top: 30px;
-    }
-    .log-entry {
-      font-size: 13px;
-      border-bottom: 1px solid #ddd;
-      padding: 5px 0;
-    }
-    .goal-tracker {
+    .calendar-section {
       margin-top: 40px;
-      padding: 20px;
-      border: 2px solid #000;
     }
-    .goal {
-      margin-bottom: 20px;
+    table.calendar {
+      width: 100%;
+      border-collapse: collapse;
     }
-    .goal-title {
-      font-weight: bold;
+    table.calendar th, table.calendar td {
+      border: 1px solid #000;
+      padding: 5px;
+      text-align: center;
+      vertical-align: top;
     }
-    .progress-bar {
-      background: #ddd;
-      height: 10px;
-      position: relative;
-      margin-top: 5px;
+    .calendar .work-day {
+      background: #e0f7fa;
     }
-    .progress-fill {
-      background: #d3ff00;
-      height: 100%;
-      width: 0%;
+    .calendar .pay-day {
+      background: #f1f8e9;
+    }
+    .calendar .bill-due {
+      background: #ffebee;
+    }
+    .event-note {
+      font-size: 11px;
     }
   </style>
 </head>
@@ -89,124 +84,133 @@
   <h1>The Accountant</h1>
 
   <div class="section">
-    <h2>Income</h2>
-    <label>Alexandra Marks (Welding): $<input type="number" id="income1" value="0"></label>
-    <label>Ian Cochran (Contract Work): $<input type="number" id="income2" value="0"></label>
-    <label>Work-Study (School): $<input type="number" id="income3" value="0"></label>
-    <label>Commissions (Chainmail/Web): $<input type="number" id="income4" value="0"></label>
+    <h2>Add Calendar Event</h2>
+    <label>Date: <input type="date" id="eventDate"></label>
+    <label>Type:
+      <select id="eventType">
+        <option value="work-day">Work Day</option>
+        <option value="pay-day">Pay Day</option>
+        <option value="bill-due">Bill Due</option>
+      </select>
+    </label>
+    <label>Note: <input type="text" id="eventNote" placeholder="Optional note"></label>
+    <button onclick="addCalendarEvent()">Add Event</button>
+    <button onclick="previousMonth()">Previous Month</button>
+    <button onclick="nextMonth()">Next Month</button>
   </div>
 
-  <div class="section">
-    <h2>Expenses</h2>
-    <label>AmEx Credit Card: $<input type="number" id="expense1" value="0"></label>
-    <label>Personal Loan: $<input type="number" id="expense2" value="0"></label>
-    <label>Healthcare: $<input type="number" id="expense3" value="0"></label>
-    <label>Life Insurance: $<input type="number" id="expense4" value="0"></label>
-    <label>Domain/Website: $<input type="number" id="expense5" value="0"></label>
-    <label>Software Subscriptions: $<input type="number" id="expense6" value="0"></label>
-    <label>Optry: $<input type="number" id="expense7" value="0"></label>
-  </div>
-
-  <button onclick="calculateAndLog()">Log & Calculate</button>
-  <button onclick="exportCSV()">Export CSV</button>
-
-  <div class="summary" id="summary">
-    <p>Total Income: <span class="highlight" id="totalIncome">$0</span></p>
-    <p>Total Expenses: <span class="highlight" id="totalExpenses">$0</span></p>
-    <p>Net Income: <span class="highlight" id="netIncome">$0</span></p>
-  </div>
-
-  <div class="log">
-    <h2>Monthly Log</h2>
-    <div id="logContainer"></div>
-  </div>
-
-  <div class="goal-tracker">
-    <h2>Financial Goals</h2>
-
-    <div class="goal">
-      <div class="goal-title">Pay Off Personal Loan (Target: $13,000 by Dec 2025)</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: 39.29%"></div>
-      </div>
-      <p>Progress: $5,108.60 paid</p>
-    </div>
-
-    <div class="goal">
-      <div class="goal-title">Pay Off AmEx (Target: $3,000 by Sep 2025)</div>
-      <div class="progress-bar">
-        <div class="progress-fill" style="width: 0%"></div>
-      </div>
-      <p>Progress: $0 paid</p>
-    </div>
+  <div class="calendar-section">
+    <h2 id="calendarTitle">Calendar</h2>
+    <table class="calendar">
+      <thead>
+        <tr>
+          <th>Sun</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+        </tr>
+      </thead>
+      <tbody id="calendarBody"></tbody>
+    </table>
   </div>
 
   <script>
-    function calculateAndLog() {
-      const incomeFields = ['income1', 'income2', 'income3', 'income4'];
-      const expenseFields = ['expense1', 'expense2', 'expense3', 'expense4', 'expense5', 'expense6', 'expense7'];
+    let calendarEvents = JSON.parse(localStorage.getItem('calendarEvents') || '[]');
+    let currentMonth = new Date().getMonth();
+    let currentYear = new Date().getFullYear();
 
-      const incomes = incomeFields.map(id => parseFloat(document.getElementById(id).value) || 0);
-      const expenses = expenseFields.map(id => parseFloat(document.getElementById(id).value) || 0);
+    function addCalendarEvent() {
+      const date = document.getElementById('eventDate').value;
+      const type = document.getElementById('eventType').value;
+      const note = document.getElementById('eventNote').value;
 
-      const totalIncome = incomes.reduce((a, b) => a + b, 0);
-      const totalExpenses = expenses.reduce((a, b) => a + b, 0);
-      const netIncome = totalIncome - totalExpenses;
-
-      document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
-      document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
-      document.getElementById('netIncome').textContent = `$${netIncome.toFixed(2)}`;
-
-      const now = new Date();
-      const logEntry = {
-        date: now.toLocaleDateString(),
-        income: totalIncome,
-        expenses: totalExpenses,
-        net: netIncome
-      };
-
-      let logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-      logs.push(logEntry);
-      localStorage.setItem('financeLogs', JSON.stringify(logs));
-
-      renderLogs();
+      if (date && type) {
+        calendarEvents.push({ date, type, note });
+        localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
+        const selectedDate = new Date(date);
+        currentMonth = selectedDate.getMonth();
+        currentYear = selectedDate.getFullYear();
+        generateCalendar(currentYear, currentMonth);
+      }
     }
 
-    function renderLogs() {
-      const container = document.getElementById('logContainer');
-      container.innerHTML = '';
-      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-
-      logs.forEach(entry => {
-        const div = document.createElement('div');
-        div.className = 'log-entry';
-        div.textContent = `${entry.date} — Income: $${entry.income.toFixed(2)} | Expenses: $${entry.expenses.toFixed(2)} | Net: $${entry.net.toFixed(2)}`;
-        container.appendChild(div);
+    function deleteEvent(dateKey, index) {
+      calendarEvents = calendarEvents.filter((e, i) => {
+        const d = new Date(e.date);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        return !(key === dateKey && i === index);
       });
+      localStorage.setItem('calendarEvents', JSON.stringify(calendarEvents));
+      generateCalendar(currentYear, currentMonth);
     }
 
-    function exportCSV() {
-      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-      if (logs.length === 0) return;
+    function generateCalendar(year, month) {
+      const firstDay = new Date(year, month, 1);
+      const lastDay = new Date(year, month + 1, 0);
+      const numDays = lastDay.getDate();
 
-      const headers = ['Date', 'Income', 'Expenses', 'Net'];
-      const rows = logs.map(entry => [entry.date, entry.income, entry.expenses, entry.net]);
-      const csvContent = [headers, ...rows]
-        .map(row => row.join(","))
-        .join("\n");
+      const calendarBody = document.getElementById("calendarBody");
+      const calendarTitle = document.getElementById("calendarTitle");
+      calendarBody.innerHTML = "";
+      calendarTitle.textContent = `${firstDay.toLocaleString('default', { month: 'long' })} ${year}`;
 
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.setAttribute("href", url);
-      link.setAttribute("download", "finance_logs.csv");
-      link.style.display = "none";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      const eventsMap = {};
+      calendarEvents.forEach((event, idx) => {
+        const d = new Date(event.date);
+        const key = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+        if (!eventsMap[key]) eventsMap[key] = [];
+        eventsMap[key].push({ ...event, index: idx });
+      });
+
+      let date = 1;
+      for (let i = 0; i < 6; i++) {
+        const row = document.createElement("tr");
+        for (let j = 0; j < 7; j++) {
+          const cell = document.createElement("td");
+          if (i === 0 && j < firstDay.getDay()) {
+            cell.textContent = "";
+          } else if (date > numDays) {
+            break;
+          } else {
+            const key = `${year}-${month}-${date}`;
+            cell.textContent = date;
+            if (eventsMap[key]) {
+              eventsMap[key].forEach(e => {
+                const div = document.createElement('div');
+                div.className = e.type;
+                div.innerHTML = `<div class='event-note'>${e.note || e.type.replace('-', ' ')} <button onclick="deleteEvent('${key}', ${e.index})">x</button></div>`;
+                cell.appendChild(div);
+              });
+              cell.classList.add(...eventsMap[key].map(e => e.type));
+            }
+            date++;
+          }
+          row.appendChild(cell);
+        }
+        calendarBody.appendChild(row);
+      }
     }
 
-    window.onload = renderLogs;
+    function previousMonth() {
+      if (currentMonth === 0) {
+        currentMonth = 11;
+        currentYear--;
+      } else {
+        currentMonth--;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+
+    function nextMonth() {
+      if (currentMonth === 11) {
+        currentMonth = 0;
+        currentYear++;
+      } else {
+        currentMonth++;
+      }
+      generateCalendar(currentYear, currentMonth);
+    }
+
+    window.onload = function () {
+      generateCalendar(currentYear, currentMonth);
+    };
   </script>
 </body>
 </html>
