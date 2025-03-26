@@ -170,34 +170,96 @@
   <!-- Chat Assistant UI -->
   <div class="chatbox">
     <textarea id="chatInput" placeholder="Ask The Accountant..."></textarea>
-    <button onclick="chatWithAssistant()">Ask</button>
+    <button onclick="chatWithAssistantGPT()">Ask</button>
     <div class="chat-response" id="chatResponse"></div>
   </div>
 
   <script>
-    function chatWithAssistant() {
-      const input = document.getElementById('chatInput').value.toLowerCase();
-      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
-      const totalIncome = logs.reduce((sum, entry) => sum + entry.income, 0);
-      const totalExpenses = logs.reduce((sum, entry) => sum + entry.expenses, 0);
-      const totalNet = logs.reduce((sum, entry) => sum + entry.net, 0);
+    function calculateAndLog() {
+      const incomeFields = ['income1', 'income2', 'income3', 'income4'];
+      const expenseFields = ['expense1', 'expense2', 'expense3', 'expense4', 'expense5', 'expense6', 'expense7'];
 
-      let response = "";
-      if (input.includes("total income")) {
-        response = `Your total logged income is $${totalIncome.toFixed(2)}.`;
-      } else if (input.includes("total expenses")) {
-        response = `Your total logged expenses are $${totalExpenses.toFixed(2)}.`;
-      } else if (input.includes("net income")) {
-        response = `Your total net income is $${totalNet.toFixed(2)}.`;
-      } else if (input.includes("help") || input.includes("what can you do")) {
-        response = "You can ask me things like:\n- What's my total income?\n- How much have I spent?\n- What's my net income?";
-      } else {
-        response = "Sorry, I didn’t understand that. Try asking about total income, expenses, or net income.";
-      }
+      const incomes = incomeFields.map(id => parseFloat(document.getElementById(id).value) || 0);
+      const expenses = expenseFields.map(id => parseFloat(document.getElementById(id).value) || 0);
 
-      document.getElementById('chatResponse').textContent = response;
+      const totalIncome = incomes.reduce((a, b) => a + b, 0);
+      const totalExpenses = expenses.reduce((a, b) => a + b, 0);
+      const netIncome = totalIncome - totalExpenses;
+
+      document.getElementById('totalIncome').textContent = `$${totalIncome.toFixed(2)}`;
+      document.getElementById('totalExpenses').textContent = `$${totalExpenses.toFixed(2)}`;
+      document.getElementById('netIncome').textContent = `$${netIncome.toFixed(2)}`;
+
+      const now = new Date();
+      const logEntry = {
+        date: now.toLocaleDateString(),
+        income: totalIncome,
+        expenses: totalExpenses,
+        net: netIncome
+      };
+
+      let logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
+      logs.push(logEntry);
+      localStorage.setItem('financeLogs', JSON.stringify(logs));
+
+      renderLogs();
     }
+
+    function renderLogs() {
+      const container = document.getElementById('logContainer');
+      container.innerHTML = '';
+      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
+
+      logs.forEach(entry => {
+        const div = document.createElement('div');
+        div.className = 'log-entry';
+        div.textContent = `${entry.date} — Income: $${entry.income.toFixed(2)} | Expenses: $${entry.expenses.toFixed(2)} | Net: $${entry.net.toFixed(2)}`;
+        container.appendChild(div);
+      });
+    }
+
+    function exportCSV() {
+      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
+      if (logs.length === 0) return;
+
+      const headers = ['Date', 'Income', 'Expenses', 'Net'];
+      const rows = logs.map(entry => [entry.date, entry.income, entry.expenses, entry.net]);
+      const csvContent = [headers, ...rows]
+        .map(row => row.join(","))
+        .join("\n");
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.setAttribute("href", url);
+      link.setAttribute("download", "finance_logs.csv");
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function chatWithAssistantGPT() {
+      const input = document.getElementById('chatInput').value;
+      const logs = JSON.parse(localStorage.getItem('financeLogs') || '[]');
+
+      fetch('https://gpt-proxy-for-user.vercel.app/api/ask', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ logs, question: input })
+      })
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById('chatResponse').textContent = data.reply || data.error || 'No response.';
+        })
+        .catch(err => {
+          document.getElementById('chatResponse').textContent = 'Error: ' + err.message;
+        });
+    }
+
+    window.onload = renderLogs;
   </script>
 </body>
 </html>
-
